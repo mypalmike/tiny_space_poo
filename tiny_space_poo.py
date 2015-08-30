@@ -30,8 +30,8 @@ class TinySpacePooListener(tweepy.StreamListener):
 
   def on_status(self, status): #, tweet_id):
     print >> sys.stderr, u"Received tweet author:'%s' text:'%s' id:%d" % (status.author.screen_name.lower(), status.text, status.id)
-    # Caution - only retweet the pope, in case other stuff shows up in my stream
-    if status.author.screen_name.lower() in (u'tiny_star_field', u'futuresnark'):
+    # Only respond to specific account(s)
+    if status.author.screen_name.lower() in (u'tiny_star_field'):
       print >> sys.stderr, "Matched user"
       mangled_status = mangle_status(status.text, status.author.screen_name)
       if mangled_status:
