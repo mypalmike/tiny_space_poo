@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import re
 import json
 import os
@@ -7,6 +9,7 @@ import random
 import re
 import string
 import sys
+import traceback
 import tweepy
 
 UNICODE_POO = u"\U0001F4A9"
@@ -22,6 +25,9 @@ def mangle_status(text, sender):
   result = u''.join(chars)
   return u'%s\n@%s' % (result, sender)
 
+def log(line):
+  print(line, file=sys.stderr)
+
 class TinySpacePooListener(tweepy.StreamListener):
   def __init__(self, api):
     tweepy.StreamListener.__init__(self)
@@ -29,22 +35,33 @@ class TinySpacePooListener(tweepy.StreamListener):
     # self.status_mangler = StatusMangler()
 
   def on_status(self, status): #, tweet_id):
-    print >> sys.stderr, u"Received tweet author:'%s' text:'%s' id:%d" % (status.author.screen_name.lower(), status.text, status.id)
+    # log(u"Received tweet author:'%s' text:'%s' id:%d" % (status.author.screen_name.lower(), status.text, status.id))
+    # something in that log line keeps crashing with unicode.
+    log(u'Received tweet.')
+
     # Only respond to specific account(s)
-    if status.author.screen_name.lower() in (u'tiny_star_field'):
-      print >> sys.stderr, "Matched user"
+    # if status.author.screen_name.lower() in (u'tiny_star_field', u'futuresnark'):
+    if status.author.screen_name.lower() in (u'tiny_astro_naut', u'futuresnark'):
+      log(u"Matched user")
       mangled_status = mangle_status(status.text, status.author.screen_name)
       if mangled_status:
-        print >> sys.stderr, u"Status mangled:'%s'" % mangled_status
+        # log(u"Status mangled:'%s'" % mangled_status)
+        log(u"Mangled status.")
         self.api.update_status(status=mangled_status, in_reply_to_status_id=status.id)
+    else:
+      log(u"Skipped nonmatching user.")
+    return True
+
+  def on_exception(self, exc):
+    traceback.print_exc(file=sys.stderr)
     return True
 
   def on_error(self, status_code):
-    print >> sys.stderr, 'Encountered error with status code:', status_code
+    log('Encountered error with status code:', status_code)
     return True # Don't kill the stream
 
   def on_timeout(self):
-    print >> sys.stderr, 'Timeout...'
+    log('Timeout...')
     return True # Don't kill the stream
 
 def get_creds():
@@ -58,21 +75,21 @@ def get_auth_api():
   return [auth, tweepy.API(auth)]
 
 def main(argv = sys.argv):
-  print >> sys.stderr, "Starting"
+  log("Starting")
   auth, api = get_auth_api()
   listener = TinySpacePooListener(api)
   stream = tweepy.Stream(auth, listener, timeout = 3600)
 
-  print >> sys.stderr, "Created stream. Calling userstream()."
+  log("Created stream. Calling userstream().")
 
   while True:
     try:
-      stream.userstream(encoding='utf8')
-    except Exception, exc:
+      stream.userstream(encoding='utf-8')
+    except Exception as exc:
       if exc.args and 'timed out' in exc.args:
         pass
       else:
-        print >> sys.stderr, exc 
+        traceback.print_exc(file=sys.stderr) 
 
 if __name__ == "__main__":
-    main()
+  main()
