@@ -42,8 +42,8 @@ class TinySpacePooListener(tweepy.StreamListener):
     log(u'Received tweet.')
 
     # Only respond to specific account(s)
-    # if status.author.screen_name.lower() in (u'tiny_star_field', u'futuresnark'):
-    if status.author.screen_name.lower() in (u'tiny_astro_naut', u'futuresnark'):
+    # if status.author.screen_name.lower() in (u'tiny_star_field', u'mypalmike'):
+    if status.author.screen_name.lower() in (u'tiny_astro_naut', u'mypalmike'):
       log(u"Matched user")
       mangled_status = mangle_status(status.text, status.author.screen_name)
       if mangled_status:
