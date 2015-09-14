@@ -48,6 +48,7 @@ class TinySpacePooListener(tweepy.StreamListener):
         # log(u"Status mangled:'%s'" % mangled_status)
         log(u"Mangled status.")
         self.api.update_status(status=mangled_status, in_reply_to_status_id=status.id)
+        sleep(10*60)  # Sleep for 10 minutes to avoid looping on tiny_astro_naut auto-responder.
     else:
       log(u"Skipped nonmatching user.")
     return True
