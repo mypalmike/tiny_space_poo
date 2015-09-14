@@ -90,20 +90,20 @@ class TinySpacePooListener(tweepy.StreamListener):
     # Only respond to specific account(s)
     # if status.author.screen_name.lower() in (u'tiny_star_field', u'mypalmike'):
     mangled_status = None
-    if status.author.screen_name.lower() in (u'tiny_astro_naut', u'mypalmike'):
-      log(u"Matched fill-space user")
-      mangled_status = mangle_status_fill(status.text, status.author.screen_name)
-    elif status.author.screen_name.lower() in (u'digital_henge'):
-      log(u"Matched offset user")
-      mangled_status = mangle_status_offset(status.text, status.author.screen_name)
+    if 'tiny_space_poo' not in status.text:  # Avoid bot looks by ignoring tweets mentioning me.
+      if status.author.screen_name.lower() in (u'tiny_astro_naut', u'mypalmike'):
+        log(u"Matched fill-space user")
+        mangled_status = mangle_status_fill(status.text, status.author.screen_name)
+      elif status.author.screen_name.lower() in (u'digital_henge'):
+        log(u"Matched offset user")
+        mangled_status = mangle_status_offset(status.text, status.author.screen_name)
 
-    if mangled_status:
-      # log(u"Status mangled:'%s'" % mangled_status)
-      log(u"Mangled status.")
-      self.api.update_status(status=mangled_status, in_reply_to_status_id=status.id)
-      sleep(10*60)  # Sleep for 10 minutes to avoid looping on tiny_astro_naut auto-responder.
-    else:
-      log(u"Skipped nonmatching user.")
+      if mangled_status:
+        # log(u"Status mangled:'%s'" % mangled_status)
+        log(u"Mangled status.")
+        self.api.update_status(status=mangled_status, in_reply_to_status_id=status.id)
+      else:
+        log(u"Skipped nonmatching user.")
     return True
 
   def on_exception(self, exc):
