@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 from time import sleep
 
 import re
-import StringIO
+from io import StringIO
 import json
+import logging
 import os
 import random
 import re
@@ -15,11 +14,15 @@ import sys
 import traceback
 import tweepy
 
-UNICODE_POO = u"\U0001F4A9"
+UNICODE_POO = '\U0001F4A9'
+
+ID_MYPALMIKE = '233950108'
+ID_TINY_ASTRO_NAUT = '2758649640'
+ID_DIGITAL_HENGE = '3062148770'
 
 
 def space_indices(text):
-  return [i for i, x in enumerate(text) if x == u' ']
+  return [i for i, x in enumerate(text) if x == ' ']
 
 
 def mangle_status_fill(text, sender):
@@ -28,82 +31,73 @@ def mangle_status_fill(text, sender):
   candidate_indices = space_indices(chars)
   idx = random.choice(candidate_indices)
   chars[idx] = UNICODE_POO
-  result = u''.join(chars)
-  return u'%s\n@%s' % (result, sender)
+  result = ''.join(chars)
+  return '%s\n@%s' % (result, sender)
 
 
 def print_offset(io, do_poo, src_line, x_offset):
   if do_poo:
     poo = UNICODE_POO
   else:
-    poo = u''
+    poo = ''
 
   if x_offset < 0:
-    fmt_tuple = (poo, u' ' * abs(x_offset), src_line)
+    fmt_tuple = (poo, ' ' * abs(x_offset), src_line)
   else:
-    fmt_tuple = (src_line, u' ' * abs(x_offset), poo)
+    fmt_tuple = (src_line, ' ' * abs(x_offset), poo)
 
   if not (fmt_tuple[0] or fmt_tuple[2]):
-    print(u'', file=io)
+    print('', file=io)
   elif not (fmt_tuple[2]):
-    print(u'%s' % fmt_tuple[0], file=io)
+    print('%s' % fmt_tuple[0], file=io)
   else:
-    print(u'%s%s%s' % fmt_tuple, file=io)
+    print('%s%s%s' % fmt_tuple, file=io)
 
 
 def mangle_status_offset(text, sender):
   # Make a poo by creating horizontal and vertical space.
-  io = StringIO.StringIO()
-  src_lines = text.split(u'\n')
+  io = StringIO()
+  src_lines = text.split('\n')
   x_offset = random.randint(-8, 8)
   y_offset = random.randint(-4, 4)
   curr_y = min(y_offset, 0)
   for src_line in src_lines:
     while curr_y < 0:
-      print_offset(io, curr_y == y_offset, u'', x_offset)
+      print_offset(io, curr_y == y_offset, '', x_offset)
       curr_y += 1
     print_offset(io, curr_y == y_offset, src_line, x_offset)
     curr_y += 1
   while curr_y <= y_offset:
-    print_offset(io, curr_y == y_offset, u'', x_offset)
+    print_offset(io, curr_y == y_offset, '', x_offset)
     curr_y += 1
   result = io.getvalue()
   io.close()
-  return u'%s@%s' % (result, sender)
-
-
-def log(line):
-  print(line, file=sys.stderr)
+  return '%s@%s' % (result, sender)
 
 
 class TinySpacePooListener(tweepy.StreamListener):
   def __init__(self, api):
     tweepy.StreamListener.__init__(self)
     self.api = api
-    # self.status_mangler = StatusMangler()
 
   def on_status(self, status): #, tweet_id):
-    # log(u"Received tweet author:'%s' text:'%s' id:%d" % (status.author.screen_name.lower(), status.text, status.id))
-    # something in that log line keeps crashing with unicode.
-    log(u'Received tweet.')
+    logging.info('Received tweet from {} text is {}.'.format(status.author.screen_name, status.text))
 
-    # Only respond to specific account(s)
-    # if status.author.screen_name.lower() in (u'tiny_star_field', u'mypalmike'):
     mangled_status = None
-    if 'tiny_space_poo' not in status.text:  # Avoid bot looks by ignoring tweets mentioning me.
-      if status.author.screen_name.lower() in (u'tiny_astro_naut', u'mypalmike'):
-        log(u"Matched fill-space user")
+    if 'tiny_space_poo' not in status.text:  # Avoid bot loops by ignoring tweets mentioning me.
+      if status.author.screen_name.lower() in ('tiny_astro_naut'): # , 'mypalmike'):
+        logging.info('Matched fill-space user')
         mangled_status = mangle_status_fill(status.text, status.author.screen_name)
-      elif status.author.screen_name.lower() in (u'digital_henge'):
-        log(u"Matched offset user")
+      elif status.author.screen_name.lower() in ('digital_henge'):
+        logging.info('Matched offset user')
         mangled_status = mangle_status_offset(status.text, status.author.screen_name)
 
       if mangled_status:
-        # log(u"Status mangled:'%s'" % mangled_status)
-        log(u"Mangled status.")
+        # logging.info('Status mangled:'%s'' % mangled_status)
+        logging.info('Mangled status.')
         self.api.update_status(status=mangled_status, in_reply_to_status_id=status.id)
       else:
-        log(u"Skipped nonmatching user.")
+        logging.info('Skipped nonmatching user.')
     return True
 
   def on_exception(self, exc):
@@ -111,16 +105,18 @@ class TinySpacePooListener(tweepy.StreamListener):
     return True
 
   def on_error(self, status_code):
-    log('Encountered error with status code:', status_code)
+    logging.error('Encountered error with status code: {}'.format(status_code))
+    if status_code == 420:
+      return False
     return True # Don't kill the stream
 
   def on_timeout(self):
-    log('Timeout...')
+    logging.error('Timeout...')
     return True # Don't kill the stream
 
 
 def get_creds():
-  with open("creds", "r") as f:
+  with open('creds', 'r') as f:
     return [line.strip() for line in f]
 
 
@@ -132,16 +128,19 @@ def get_auth_api():
 
 
 def main(argv = sys.argv):
-  log("Starting")
+  logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
+
+  logging.warn('Starting')
+
   auth, api = get_auth_api()
   listener = TinySpacePooListener(api)
   stream = tweepy.Stream(auth, listener, timeout = 3600)
 
-  log("Created stream. Calling userstream().")
+  logging.info('Created stream. Calling stream.filter()...')
 
   while True:
     try:
-      stream.userstream(encoding='utf-8')
+      stream.filter(follow=[ID_MYPALMIKE, ID_TINY_ASTRO_NAUT, ID_DIGITAL_HENGE])
     except Exception as exc:
       if exc.args and 'timed out' in exc.args:
         pass
@@ -149,5 +148,5 @@ def main(argv = sys.argv):
         traceback.print_exc(file=sys.stderr) 
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   main()
