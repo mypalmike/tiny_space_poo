@@ -20,6 +20,7 @@ ID_MYPALMIKE = '233950108'
 ID_TINY_ASTRO_NAUT = '2758649640'
 ID_DIGITAL_HENGE = '3062148770'
 ID_ASCIIGALAXY = '980223140574806017'
+ID_TINY__FOREST = '1093293166856425478'
 
 def space_indices(text):
   # Spaces or the wide dot used by asciigalaxy
@@ -86,7 +87,7 @@ class TinySpacePooListener(tweepy.StreamListener):
 
     mangled_status = None
     if 'tiny_space_poo' not in status.text:  # Avoid bot loops by ignoring tweets mentioning me.
-      if status.author.screen_name.lower() in ('tiny_astro_naut', 'asciigalaxy'): # , 'mypalmike'):
+      if status.author.screen_name.lower() in ('tiny__forest', 'asciigalaxy'): # , 'mypalmike'):
         logging.info('Matched fill-space user')
         mangled_status = mangle_status_fill(status.text, status.author.screen_name)
       elif status.author.screen_name.lower() in ('digital_henge'):
@@ -141,14 +142,13 @@ def main(argv = sys.argv):
 
   while True:
     try:
-      stream.filter(follow=[ID_MYPALMIKE, ID_TINY_ASTRO_NAUT, ID_DIGITAL_HENGE, ID_ASCIIGALAXY])
+      stream.filter(follow=[ID_MYPALMIKE, ID_TINY_ASTRO_NAUT, ID_DIGITAL_HENGE, ID_ASCIIGALAXY, ID_TINY__FOREST])
     except Exception as exc:
       if exc.args and 'timed out' in exc.args:
         pass
       else:
-        traceback.print_exc(file=sys.stderr) 
+        traceback.print_exc(file=sys.stderr)
 
 
 if __name__ == '__main__':
   main()
-  
